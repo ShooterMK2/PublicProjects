@@ -20,7 +20,7 @@ class Hangman():
     # Class variables
     isWin = False
     word = ""
-    Max_Fail = 4   #Max chance of the easiest mode
+    Max_Fail = 4   #Max amount chance of the easiest mode
     Fail = 0    
     difficulty = -1
     standard_length = 8
