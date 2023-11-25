@@ -19,34 +19,92 @@ UI: symbol set: - | ⌄ <
 
 """
 #---------------------------------------------------------------------------------#
+from tqdm import tqdm
 import numpy as np
 from PIL import Image
+import os
 
 class PhotoEditor():
+    #file handling variable
+    extensions = ["*.jpg", "*.bmp", "*.jpeg"]
+    ImagePath_template = "{userPath}\\{fileName}"
+    modifiedFileName = "modified_{}"
+    User_directory = ""
+    Output_directory = ""
+    Image_Name = {}
+    Chosen_Image = ""
+    
     #Image Variable
     im = Image.Image
+    imArray = []
     image_width = 0
     image_height = 0
     image_WidthRatio = 0.0
     image_HeightRatio = 0.0
+
+    editedIm = Image.Image
 
     #UI Variable
     standard_width = standard_height = 9
 
     UI_image_width = 0
     UI_image_height = 0
-    Left_indicator_index = 0
+    Left_indicator_index = 1
     Right_indicator_index = 0
-    Top_indicator_index = 0
+    Top_indicator_index = 1
     Bottom_indicator_index = 0
 
     UI_Box = []
     UserImage = []
 
-    def __init__(self, path) -> None:
-        self.im = Image.open(path)
+    #initial settings
+    def initial_settings(self):
+        directory = os.path.dirname(os.path.realpath(__file__))
+        try:
+            os.makedirs(os.path.join(directory, "Modified"))
+            os.makedirs(os.path.join(directory, "Raw"))
+            print("Editor Initialization finished, Please put photo that you want to edit in \"Raw\" Folder.")
+        except FileExistsError:
+            pass
+        
+        return(directory)
+        
+    #file opening functions
+    def ListDirectory(self, path):
+        imgfiles = {}
+
+        for file, count in enumerate(os.listdir(path)):                
+            imgfiles[file] = count
+
+        return imgfiles
+
+    def ChooseFile(self, fileNames = dict):
+
+        print("File list:")
+        
+        for count in range(len(fileNames)):
+            print(str(count)+ ":", fileNames[count])
+
+        userInput = int(input(f"Input file index(0-{len(fileNames)-1}):"))
+        
+        while fileNames.get(userInput) == -1:
+            print("Invilad index!")
+            userInput = input(f"Input file index(0-{len(fileNames)-1}):")
+        
+        return fileNames.get(userInput)
+        
+    def __init__(self) -> None:
+        
+        self.User_directory = os.path.join(self.initial_settings(),"Raw")
+        self.Output_directory = os.path.join(self.User_directory, "Modified")
+        self.Image_Name = self.ListDirectory(self.User_directory) 
+        self.Chosen_Image = self.ChooseFile(self.Image_Name)
+
+        self.im = Image.open(self.ImagePath_template.format(userPath = self.User_directory, fileName = self.Chosen_Image))
         self.image_width = self.im.width
         self.image_height = self.im.height
+        
+        self.imArray = np.array(self.im)
         
         ratio = self.image_width/self.image_height
 
@@ -114,17 +172,16 @@ class PhotoEditor():
         for row, count in enumerate(self.UI_Box):
             print("".join(self.UI_Box[row]))
 
-    def MoveLeftRightIndicator(self):
+    def MoveLeftRightIndicator(self, L, R):
         #get input
-        L = int(input(f"input bound box start index(1-{self.UI_image_width}):"))
-        while L < 1 or L > self.UI_image_width:
-            print("ERROR: Invalid index")
-            L = int(input(f"input bound box start index(1-{self.UI_image_width}):"))
         
-        R = int(input(f"input bound box end index(1-{self.UI_image_width}):"))
+        while L < 1 or L > self.UI_image_width:
+            print("ERROR: Invalid left index")
+            return False
+        
         while R < 1 or R > self.UI_image_width or R < L:
-            print("ERROR: Invalid index")
-            R = int(input(f"input bound box end index(1-{self.UI_image_width}):"))
+            print("ERROR: Invalid right index")
+            return False
             
         #switch Left Indicator
         self.UI_Box[2][self.Left_indicator_index], self.UI_Box[2][L] = self.UI_Box[2][L], self.UI_Box[2][self.Left_indicator_index]
@@ -136,18 +193,16 @@ class PhotoEditor():
         self.Left_indicator_index = L
         self.Right_indicator_index = R
 
-    def MoveTopBottomIndicator(self):
+    def MoveTopBottomIndicator(self, T, D):
         #get input
-        T = int(input(f"input bound box start index(1-{self.UI_image_height}):"))
         
         while T < 0 or T >= self.UI_image_height:
             print("ERROR: Invalid index")
-            T = int(input(f"input bound box start index(1-{self.UI_image_height}):"))
-        
-        D = int(input(f"input bound box end index(1-{self.UI_image_height}):")) 
+            return False
+         
         while D < 0 or D > self.UI_image_height:
             print("ERROR: Invalid index")
-            D = int(input(f"input bound box end index(1-{self.UI_image_height}):"))
+            return False
             
         #switch Top Indicator
         self.UI_Box[self.Top_indicator_index+3][-2], self.UI_Box[T+3][-2] = self.UI_Box[T+3][-2], self.UI_Box[self.Top_indicator_index+3][-2]
@@ -162,9 +217,18 @@ class PhotoEditor():
     # Show selection    
     def selection(self):
         #get selection method(ALL or custom)
-
-        self.MoveLeftRightIndicator()
-        self.MoveTopBottomIndicator()
+        # new selection input method: all at one seperated by,
+        selectionInput = input("Input selection coordinates(left, right, top, down, seperate with \",\"), press enter for select all: ").split(",")
+        
+        if selectionInput != [""]:
+            while len(selectionInput) != 4 or selectionInput[0].isdigit() == False or selectionInput[1].isdigit() == False or selectionInput[2].isdigit() == False or selectionInput[3].isdigit() == False:
+                print("Four integer is required")
+                selectionInput = input("Input selection coordinates(left, right, top, down, seperate with \",\"), press enter for select all: ").split(",")
+                
+            if self.MoveLeftRightIndicator(int(selectionInput[0]), int(selectionInput[1])) == False:
+                return False
+            if self.MoveTopBottomIndicator(int(selectionInput[2]), int(selectionInput[3])) == False:
+                return False
             
         left = self.Left_indicator_index
         Right = self.Right_indicator_index
@@ -186,13 +250,97 @@ class PhotoEditor():
 
         return (trueL, trueT, trueR, trueB)      
     #Image Handling
-    def saveImage():
-        pass
+    def saveImage(self, path = None, fileName = None):
+        safePath = self.User_directory
+        safeName = f"modified_{self.Chosen_Image}"
+        if path != None:
+            safeName = path
+        
+        if fileName != None:
+            safeName = fileName
+        
+        self.editedIm.save(self.ImagePath_template.format(userPath = safePath, fileName = safeName))
     
     def CropImage(self,boundary):
-        croppedImage = self.im.crop(boundary)
 
-        croppedImage.show()
+        Left, Top, Right, Bottom = boundary
+        
+        cropped_imArray = self.imArray[Top:Bottom, Left:Right]
+
+        cropped_im = Image.fromarray(cropped_imArray)
+
+        cropped_im.show()  # test code
+        
+    def AdjustImageBrightness(self):
+
+        addjustment = int(input("Brightness addjustment: "))
+
+        adjusted_image_data = self.imArray + addjustment
+        adjusted_image_data = np.clip(0, adjusted_image_data, 255)
+        adjusted_image = Image.fromarray(adjusted_image_data.astype('uint8'), 'RGB')
+
+        self.editedIm = adjusted_image
+
+    def selectionBlur(self, selection_area ,radius):
+        L, T, R, D = selection_area
+    
+        sub_imArray = self.imArray[T:D,L:R]
+        height, width, _ = sub_imArray.shape
+
+        integral_image = np.cumsum(np.cumsum(sub_imArray, axis=0), axis=1)
+        with tqdm(total=(self.image_height*self.image_width), desc='Bluring', position=0, unit= "pixel") as progressBar:
+            for y in range(height):
+                for x in range(width):
+                    
+                    x1 = max(0, x - radius)
+                    y1 = max(0, y - radius)
+                    x2 = min(width - 1, x + radius)
+                    y2 = min(height - 1, y + radius)
+
+                    count = (x2 - x1 + 1) * (y2 - y1 + 1)
+                    box_sum = integral_image[y2, x2] - integral_image[y1, x2] - integral_image[y2, x1] + integral_image[y1, x1]
+                    average = box_sum // count
+                    sub_imArray[y, x] = average
+                    
+                    progressBar.update(1)
+
+            self.imArray[T:D, L:R] = sub_imArray
+        return Image.fromarray(self.imArray)
+
+ 
+    def box_blur(self, radius, selection_area = None):
+
+        if selection_area:
+            blurred_image = self.selectionBlur(selection_area, radius)
+
+        else:
+            pixels = self.imArray
+            height, width, _ = pixels.shape
+            integral_image = np.cumsum(np.cumsum(pixels, axis=0), axis=1)
+            with tqdm(total=(self.image_height*self.image_width), desc='Outer Loop', position=0) as progressBar: 
+                for y in range(height):
+                    for x in range(width):
+                        
+                        x1 = max(0, x - radius)
+                        y1 = max(0, y - radius)
+                        x2 = min(width - 1, x + radius)
+                        y2 = min(height - 1, y + radius)
+
+                        count = (x2 - x1 + 1) * (y2 - y1 + 1)
+
+                        box_sum = integral_image[y2, x2] - integral_image[y1, x2] - integral_image[y2, x1] + integral_image[y1, x1]
+
+                        average = box_sum // count
+
+                        pixels[y, x] = average
+
+                        progressBar.update(1)
+
+            blurred_image = Image.fromarray(pixels)
+        
+        self.editedIm = blurred_image
+
+        
 
 
     #Command Handler
@@ -208,10 +356,10 @@ class PhotoEditor():
 # estimated_Box_Width = round(standard_BoxHeight * Width_Height_ratio)
 # estimated_Box_Height = round(round(standard_BoxHeight * Width_Height_ratio) / Width_Height_ratio)
 
-# editor = PhotoEditor(estimated_Box_Width, estimated_Box_Height)
-editor = PhotoEditor(r"C:\Programs\Python\photo_editor\temp1.jpg")
+editor = PhotoEditor()
+# #editor = PhotoEditor(r"C:\Programs\Python\photo_editor\modified.jpg") # test code
 editor.generateUIBox()
-
+# editor.AdjustImageBrightness()
 editor.PrintBox()
 editor.selection()
 editor.PrintBox()
@@ -219,3 +367,5 @@ print(editor.image_width)
 print(editor.image_height)
 print(editor.Left_indicator_index, editor.Right_indicator_index, editor.Top_indicator_index, editor.Bottom_indicator_index)
 editor.CropImage(editor.getTrueSelectedArea())
+editor.box_blur(25, editor.getTrueSelectedArea())
+editor.saveImage()
