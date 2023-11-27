@@ -1,32 +1,6 @@
 # Editor Description
-
-
-
-"""
-UI: symbol set: - | ⌄ < 
-
-        {horizontal supp index}
-          {horizontal index}
-       ⌄            ⌄      
-    ---------------------------------  
-    |                               |  1
-    |                               |  2
-    |                               |  3
-    |   ############                |< 4
-    |   ############                |  5
-    |   ############                |< 6
-    --------------------------------- 
-
-General UI:
-===================================================
-
-
-                    {content}
-
-
-===================================================
-
-"""
+#Console Base Photo Editor
+#Developed by Jimmy Yau, Paul Tsang, Cory Chan
 #---------------------------------------------------------------------------------#
 from tqdm import tqdm
 import numpy as np
@@ -93,10 +67,14 @@ class PhotoEditor():
         
     #file opening functions
     def ListDirectory(self, path):
-        imgfiles = {}
-
+        imgfiles = {}  
         for file, count in enumerate(os.listdir(path)):                
             imgfiles[file] = count
+
+        if len(imgfiles) == 0:
+            print("#ERROR: Fail to get files#")
+            print("No file in \"Raw\" directory, please add some file first!")
+            quit()
 
         return imgfiles
 
@@ -128,7 +106,9 @@ class PhotoEditor():
 
         self.UI_image_width = round(self.standard_width * ratio)
         self.UI_image_height = round(round(self.standard_height) / ratio)
+        self.Left_indicator_index = 1
         self.Right_indicator_index = self.UI_image_width
+        self.Top_indicator_index = 1
         self.Bottom_indicator_index = self.UI_image_height
 
         self.image_WidthRatio = self.image_width / self.UI_image_width
@@ -210,9 +190,9 @@ class PhotoEditor():
         while R < 1 or R > self.UI_image_width or R < L:
             print("ERROR: Invalid right index")
             return False
-            
+
         #switch Left Indicator
-        self.UI_Box[2][self.Left_indicator_index], self.UI_Box[2][L] = self.UI_Box[2][L], self.UI_Box[2][self.Left_indicator_index]
+        self.UI_Box[2][self.Left_indicator_index-1], self.UI_Box[2][L] = self.UI_Box[2][L], self.UI_Box[2][self.Left_indicator_index-1]
         
         #switch Right Indicator
         self.UI_Box[2][self.Right_indicator_index+1], self.UI_Box[2][R] = self.UI_Box[2][R], self.UI_Box[2][self.Right_indicator_index+1]
@@ -224,19 +204,26 @@ class PhotoEditor():
     def MoveTopBottomIndicator(self, T, D):
         #get input
         
-        while T < 0 or T >= self.UI_image_height:
-            print("ERROR: Invalid index")
+        if T < 0 or T >= self.UI_image_height:
+            print("ERROR: Invalid Top index")
             return False
          
-        while D < 0 or D > self.UI_image_height:
+        if D < 0 or D > self.UI_image_height:
+            print("ERROR: Invalid Bottom index")
+            return False
+        if D < T:
             print("ERROR: Invalid index")
             return False
-            
-        #switch Top Indicator
-        self.UI_Box[self.Top_indicator_index+3][-2], self.UI_Box[T+3][-2] = self.UI_Box[T+3][-2], self.UI_Box[self.Top_indicator_index+3][-2]
         
-        #switch Bottom Indicator
-        self.UI_Box[self.Bottom_indicator_index+4][-2], self.UI_Box[D+3][-2] = self.UI_Box[D+3][-2], self.UI_Box[self.Bottom_indicator_index+4][-2]
+        if D == T: #special Case
+            #switch Top Indicator
+            self.UI_Box[self.Top_indicator_index+2][-2], self.UI_Box[T+3][-2] = self.UI_Box[T+3][-2], self.UI_Box[self.Top_indicator_index+2][-2]
+        else:    
+            #switch Top Indicator
+            self.UI_Box[self.Top_indicator_index+2][-2], self.UI_Box[T+3][-2] = self.UI_Box[T+3][-2], self.UI_Box[self.Top_indicator_index+2][-2]
+            
+            #switch Bottom Indicator
+            self.UI_Box[self.Bottom_indicator_index+4][-2], self.UI_Box[D+3][-2] = self.UI_Box[D+3][-2], self.UI_Box[self.Bottom_indicator_index+4][-2]
 
         #update old index
         self.Top_indicator_index = T 
@@ -274,8 +261,8 @@ class PhotoEditor():
                 self.UI_Box[row][grid] = "##"
 
         self.PrintBox()
-
-    #Box UI functions end        
+    #Box UI functions end
+            
     def getTrueSelectedArea(self):
         trueL = round((self.Left_indicator_index-1) * self.image_WidthRatio)
         trueR = round(self.Right_indicator_index * self.image_WidthRatio)
@@ -306,6 +293,8 @@ class PhotoEditor():
         self.editedIm = cropped_im
 
     def AdjustImageBrightness(self):
+        print("current image status is displayed")
+        self.im.show()
 
         addjustment = int(input("Brightness adjustment: "))
 
@@ -347,7 +336,7 @@ class PhotoEditor():
 
  
     def BlurHandler(self, selection_area, radius = 15):
-
+        
         blurred_image = self.selectionBlur(selection_area, radius)
         
         self.editedIm = blurred_image
@@ -397,7 +386,7 @@ class PhotoEditor():
                     self.BlurHandler(self.getTrueSelectedArea())
                 
                 print("Image blured")
-            
+            print("Preview image opened")
             self.editedIm.show("Preview")
 
             userInput2 = input("Any Further edit(Y/N)?")
@@ -410,11 +399,7 @@ class PhotoEditor():
                 self.im = self.editedIm
 
             else:
-                filename = input("Input desire filename, press enter for default:")
-                if filename:  
-                    self.saveImage(filename)
-                else:
-                    self.saveImage()
+                self.saveImage()
                 print("Thanks for using")
                 self.isRunning = False
 
