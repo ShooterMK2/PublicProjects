@@ -16,6 +16,7 @@ There should be a clear instruction in every steps. Please read those before tak
 The modified image will be stored in the new "Modified" folder in default. You can edit the saving path during the editing.
 
 ## Remindar
+- **Please make sure that Tqdm, Numpy, and Pillow is installed.** 
 - The editor should be able to handle common image types like PNG, JPG and BMP. However, Since the file scanning filter is not working right now, 
 - please **DON'T** put any non-image file in the "Raw" folder. Or errors may pop out when you accidentally select those file in the editor.<br/>
 - Please make sure that your input is **CORRECT AND FULFILL THE REQUIRMENTS** when you are using the editor. **TRY NOT TO CHALLENGE** the program - or you may encounter an error that may lead to progress loss.<br/>
