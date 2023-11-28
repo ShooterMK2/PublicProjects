@@ -5,15 +5,15 @@ This is a console-based image editor with 3 editing functions: Blur, Crop, and A
 User can select part of the image for Blur and Crop function.<br> 
 
 ## How to use
-### initial setup
+### Initial setup
 After downloaded the editorUI script, place it into a empty folder and excute it.
 The first run will be a auto initialization run for setting the folder it required.
 After the first run, place your images in the new "Raw" folder. Then it is ready to use.<br>
 
-The modified image will be stored in the new "Modified" folder in default. You can edit the saving path during the editing.<br>
-
 ### Using the editor
-There should be a clear instruction in every steps. Please read those before taking any action to prevent errors.
+There should be a clear instruction in every steps. Please read those before taking any action to prevent errors.<br>
+
+The modified image will be stored in the new "Modified" folder in default. You can edit the saving path during the editing.
 
 ## Remindar
 - The editor should be able to handle common image types like PNG, JPG and BMP. However, Since the file scanning filter is not working right now, 
